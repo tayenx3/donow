@@ -17,6 +17,6 @@ cargo install --path .
 ```bash
 donow add "Learn Rust"
 donow view
-donow done 1
+donow update-by-id 1 done
 donow search-name "Rust"
 ```
