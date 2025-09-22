@@ -9,51 +9,35 @@ use crate::config::*;
 use chrono::Utc;
 use std::fs;
 use std::io::{Read, Write};
+use std::path::Path;
 
 use clap::Parser;
 use colored::Colorize;
 use serde_json::from_str;
 
-const CONFIG_PATH: &'static str = "./config/config.json";
-
-// PLANS
-/*
-usage:
-
-$ donow add "Learn Backend, dummy!"
-> Task added "Learn Backend, dummy!" (ID: 1)
-
-$ donow search-name "Learn Backend, dummy!"
-> Task found (ID: 1)
-
-$ donow search name "Learn C++"
-> Task not found
-
-$ donow search id 1
-> Task found ("Learn Backend, dummy!")
-
-$ donow del "Learn Backend, dummy!"
-> Task deleted
-
-$ donow add "Learn WASM"
-> Task added "Learn WASM" (ID: 1)
-
-$ donow view
-> Tasks:
-1 - "Learn WASM"
-
-*/
-
-fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
-    let json_string = fs::read_to_string(CONFIG_PATH)
-    .expect("Missing config file");
-
+fn load_config(path: &Path) -> Result<AppConfig, Box<dyn std::error::Error>> {
+    if !path.exists() {
+        let default_config = AppConfig {
+            data_path: "tasks.json".to_string()
+        };
+        let json = serde_json::to_string_pretty(&default_config)?;
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(path, json)?;
+    }
+    
+    let json_string = std::fs::read_to_string(path)?;
     let config: AppConfig = from_str(&json_string)?;
-
     Ok(config)
 }
 
-fn load_tasks(path: &str) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+fn get_project_dirs() -> Result<directories::ProjectDirs, Box<dyn std::error::Error>> {
+    directories::ProjectDirs::from("rs", "DoNow", "donow")
+        .ok_or("Could not determine project directories".into())
+}
+
+fn load_tasks(path: &Path) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
     let mut file = match fs::File::open(path) {
         Ok(file) => file,
         Err(_) => return Ok(Vec::new()),
@@ -66,26 +50,32 @@ fn load_tasks(path: &str) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         return Ok(Vec::new());
     }
 
-    let tasks: Vec<Task> = serde_json::from_str(&contents)?;
+    let tasks: Vec<Task> = from_str(&contents)?;
     Ok(tasks)
 }
 
-fn save_tasks(tasks: &Vec<Task>, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let json_string = serde_json::to_string_pretty(tasks)
-    .expect("Missing task data file");
-
-    let mut file = fs::File::create(&path)?;
-
+fn save_tasks(tasks: &Vec<Task>, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let json_string = serde_json::to_string_pretty(tasks)?;
+    let mut file = fs::File::create(path)?;
     file.write_all(json_string.as_bytes())?;
-
     Ok(())
 }
 
+#[allow(unused_variables)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
-    let config = load_config()?;
-    let data_path = config.data_path;
+    let proj_dirs = get_project_dirs()?;
+    
+    let config_dir = proj_dirs.config_dir();
+    std::fs::create_dir_all(config_dir)?;
+    let config_path = config_dir.join("config.json");
+    
+    let data_dir = proj_dirs.data_dir();
+    std::fs::create_dir_all(data_dir)?;
+    let data_path = data_dir.join("tasks.json");
+
+    let config = load_config(&config_path)?;
     let mut loaded_tasks = load_tasks(&data_path)?;
 
     match cli.command {
@@ -95,7 +85,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Some(id) => Task::new(name, id, Status::Todo, actual_description, Utc::now()),
                     None => {
                         let id = determine_id(&loaded_tasks);
-
                         Task::new(name, id, Status::Todo, actual_description, Utc::now())
                     }
                 }
@@ -104,7 +93,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Some(id) => Task::new(name.clone(), id, Status::Todo, name, Utc::now()),
                     None => {
                         let id = determine_id(&loaded_tasks);
-
                         Task::new(name.clone(), id, Status::Todo, name, Utc::now())
                     }
                 }
@@ -112,8 +100,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             loaded_tasks.push(new_task);
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         },
         Command::DeleteByName { name, first } => {
@@ -123,16 +111,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         },
         Command::DeleteByID { id } => {
             delete_task_id(&mut loaded_tasks, id);
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         },
         Command::UpdateByName { status , name, first } => {
@@ -142,16 +130,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         },
         Command::UpdateByID { status , id} => {
             update_id(&mut loaded_tasks, id, &status);
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         },
         Command::View => {
@@ -213,28 +201,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } 
             }
             if continue_clear {
-                let clear_result = save_tasks(&vec![], &data_path);
-                match clear_result {
+                let result = save_tasks(&vec![], &data_path);
+                match result {
                     Ok(()) => println!("{}", "Tasks cleared successfully".green().bold()),
-                    Err(_) => eprintln!("{}", "Clear failed".red().bold())
+                    Err(e) => eprintln!("{}", e.to_string().red().bold())
                 }
             }
         },
-
         Command::EditName { id, new_name } => {
             edit_task_name(&mut loaded_tasks, id, &new_name);
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         },
         Command::EditDescription { id, new_description } => {
             edit_task_description(&mut loaded_tasks, id, &new_description);
             let result = save_tasks(&loaded_tasks, &data_path);
             match result {
-                Ok(()) => println!("Operation successful"),
-                Err(e) => eprintln!("{}", e)
+                Ok(()) => println!("{}", "Operation successful".green().bold()),
+                Err(e) => eprintln!("{}", e.to_string().red().bold())
             }
         }
     }
