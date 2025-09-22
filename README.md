@@ -1,13 +1,10 @@
-# Donow - Task Tracker CLI
+# DoNow - Task Tracker
+> DoNow is a simple task tracker for little dev homies
 
-A fast, Rust-based task tracker for your command line.
-
-## Installation
-
+## Usage
 ```bash
-# From crates.io
-cargo install donow
-
-# From source
-cargo install --git https://github.com/yourusername/donow
+cargo run -- [command] "[task]" [flags]
 ```
+
+## Project URL:
+[Here](https://roadmap.sh/projects/task-tracker)

@@ -91,25 +91,7 @@ impl std::fmt::Display for Status {
     name = "donow", 
     version, 
     about = "DoNow Task Tracker - Simple task tracker for little dev homies", 
-        long_about = r#"
-DoNow Task Tracker - A simple and efficient task management CLI
-
-FEATURES:
-  • Add, delete, and update tasks
-  • Search by name or ID
-  • Multiple status states (Todo, In-progress, On-break, Done)
-  • Persistent storage
-
-EXAMPLES:
-  donow add "Fix login bug" --description "Investigate and fix the authentication issue"
-  donow update-by-id 42 done
-  donow search-by-name "bug"
-  donow view
-
-For more information, check the documentation at:
-https://github.com/tayenx3/donow.git
-"#,
-    after_help = "Use 'donow <COMMAND> --help' for more information about a specific command."
+    long_about = None
 )]
 pub struct Cli {
     #[command(subcommand)]
