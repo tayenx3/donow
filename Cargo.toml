@@ -3,7 +3,7 @@ name = "DoNow"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "A fast, Rust-based task tracker CLI (beta-1)"
+description = "A fast, Rust-based task tracker CLI (v0.0.1-beta.1)"
 
 [dependencies]
 chrono = { "version" = "0.4.42", "features" = ["serde"] }
