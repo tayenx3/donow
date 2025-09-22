@@ -129,3 +129,11 @@ pub fn edit_task_description(tasks: &mut Vec<Task>, target: usize, new_descripti
         task.updated_at = Utc::now();
     }
 }
+
+pub fn is_valid_id(tasks: &Vec<Task>, candidate: usize) -> bool {
+    if let Some(_) = tasks.iter().find(|task| task.id == candidate) {
+        false
+    } else {
+        true
+    }
+}

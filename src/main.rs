@@ -97,11 +97,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             };
-            loaded_tasks.push(new_task);
-            let result = save_tasks(&loaded_tasks, &data_path);
-            match result {
-                Ok(()) => println!("{}", "Operation successful".green().bold()),
-                Err(e) => eprintln!("{}", e.to_string().red().bold())
+            if is_valid_id(&loaded_tasks, new_task.id) {
+                loaded_tasks.push(new_task);
+                let result = save_tasks(&loaded_tasks, &data_path);
+                match result {
+                    Ok(()) => println!("{}", "Operation successful".green().bold()),
+                    Err(e) => eprintln!("{}", e.to_string().red().bold())
+                }
+            } else {
+                eprintln!("{}", "ID is taken".red().bold())
             }
         },
         Command::DeleteByName { name, first } => {
