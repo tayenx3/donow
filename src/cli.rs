@@ -91,9 +91,10 @@ impl std::fmt::Display for Status {
     name = "donow", 
     version, 
     about = "DoNow Task Tracker - Simple task tracker for little dev homies", 
-    long_about = None
+    long_about = None,
+    after_help = "EXAMPLES:\ndonow add \"Learn This\" -d \"Learn to do this\"\ndonow view\ndonow search-by-name \"Learn This\""
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Command
 }
